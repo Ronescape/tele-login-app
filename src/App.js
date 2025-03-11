@@ -18,19 +18,18 @@ function App() {
     const hash = window.location.hash.substring(1); // Remove the '#' from the hash
     const params = new URLSearchParams(hash);
 
-    if (params.has('id')) {
-      const user = {
-        id: params.get('id'),
-        first_name: params.get('first_name'),
-        last_name: params.get('last_name'),
-        username: params.get('username'),
-        photo_url: params.get('photo_url'),
-        auth_date: params.get('auth_date'),
-        hash: params.get('hash'),
-      };
+    if (params.has('tgAuthResult')) {
+      const tgAuthResult = params.get('tgAuthResult');
+      try {
+        // Decode the base64-encoded JSON object
+        const decodedData = atob(tgAuthResult);
+        const user = JSON.parse(decodedData);
 
-      console.log('User data:', user);
-      alert(`Logged in as ${user.first_name} ${user.last_name} (${user.username})`);
+        console.log('User data:', user);
+        alert(`Logged in as ${user.first_name} ${user.last_name} (${user.username})`);
+      } catch (error) {
+        console.error('Error decoding or parsing Telegram auth data:', error);
+      }
     }
   };
 
