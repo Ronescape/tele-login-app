@@ -3,39 +3,45 @@ import logo from './logo.svg';
 import './App.css';
 
 function App() {
-  // Function to handle Telegram authentication
-  const handleTelegramAuth = () => {
-    const botToken = '7747060551:AAEBFVtxaRSMZT37q8Y65O2fHD37kM_I7GU'; // Replace with your bot's username
-    const origin = encodeURIComponent('https://ronescape.github.io'); // Replace with your domain
-    const returnTo = encodeURIComponent('https://ronescape.github.io/tele-login-app'); // Replace with your redirect URL
+  const handleTgLogin = () => {
+    const telegram = window.Telegram;
+    if (telegram && telegram.Login) {
+      telegram.Login.auth(
+        { bot_id: '7747060551:AAEBFVtxaRSMZT37q8Y65O2fHD37kM_I7GU' },
+        async (authData) => {
+          console.log('authData:', authData);
 
-    // Redirect to Telegram for authentication
-    window.location.href = `https://oauth.telegram.org/auth?bot_id=${botToken}&origin=${origin}&embed=1&request_access=write&return_to=${returnTo}`;
-  };
-
-  // Function to parse the URL hash and extract user data
-  const parseTelegramAuthData = () => {
-    const hash = window.location.hash.substring(1); // Remove the '#' from the hash
-    const params = new URLSearchParams(hash);
-
-    if (params.has('tgAuthResult')) {
-      const tgAuthResult = params.get('tgAuthResult');
-      try {
-        // Decode the base64-encoded JSON object
-        const decodedData = atob(tgAuthResult);
-        const user = JSON.parse(decodedData);
-
-        console.log('User data:', user);
-        alert(`Logged in as ${user.first_name} ${user.last_name} (${user.username})`);
-      } catch (error) {
-        console.error('Error decoding or parsing Telegram auth data:', error);
-      }
+          // Send the auth data back to the parent window
+          window.parent.postMessage(
+            { type: 'LOGIN_SUCCESS', payload: authData },
+            '*' // Allow any origin (replace with your parent app's origin for security)
+          );
+        }
+      );
+    } else {
+      console.error('Telegram API not loaded yet.');
     }
   };
 
-  // Check for Telegram auth data in the URL hash when the component mounts
   useEffect(() => {
-    parseTelegramAuthData();
+    // Dynamically load the Telegram widget script
+    const script = document.createElement('script');
+    script.src = 'https://telegram.org/js/telegram-widget.js?22';
+    script.async = true;
+    script.onload = () => {
+      console.log('Telegram widget script loaded.');
+      handleTgLogin(); // Call handleTgLogin after the script loads
+    };
+    script.onerror = (error) => {
+      console.error('Failed to load Telegram widget script:', error);
+    };
+
+    document.body.appendChild(script);
+
+    // Cleanup function to remove the script when the component unmounts
+    return () => {
+      document.body.removeChild(script);
+    };
   }, []);
 
   return (
@@ -45,11 +51,7 @@ function App() {
         <p>
           Edit <code>src/App.js</code> and save to reload.
         </p>
-
-        {/* Telegram Login Button */}
-        <button onClick={handleTelegramAuth} style={{ marginTop: '20px', height : '50px', width: '200px', fontSize: '20px' }}>
-          Login with Telegram
-        </button>
+        <div id="telegram-login"></div>
       </header>
     </div>
   );
